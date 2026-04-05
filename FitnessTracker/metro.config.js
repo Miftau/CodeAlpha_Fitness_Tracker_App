@@ -14,6 +14,11 @@ config.resolver.alias = {
   '@': path.join(__dirname, '/'),
 };
 
+config.resolver.unstable_enablePackageExports = true;
+config.resolver.extraNodeModules = {
+  'nanoid/non-secure': path.resolve(__dirname, 'node_modules/nanoid/non-secure/index.cjs'),
+};
+
 module.exports = withNativeWind(config, {
   // Point to the global CSS entry that contains @tailwind directives
   input: './global.css',
