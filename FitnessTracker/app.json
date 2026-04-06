@@ -39,7 +39,17 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff",
+          "sounds": [
+            "./assets/sounds/workout-alarm.mp3"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

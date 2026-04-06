@@ -7,8 +7,6 @@ import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -131,6 +129,53 @@ export default function DashboardScreen() {
           <StatTile title="Calories" value={`${totalCalories} kcal`} subtitle="burned" />
           <StatTile title="Workouts" value={workouts.toString()} subtitle="today" />
           <StatTile title="Avg Sleep" value="7.2h" subtitle="last 7 days" />
+        </View>
+
+
+        <View className="grid grid-cols-2 gap-4 mt-6">
+          <Link href="./tracker" asChild>
+            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-purple-700' : 'bg-purple-500'
+              }`}>
+              <Text className="text-white font-medium text-center">
+                Auto Tracker
+              </Text>
+            </TouchableOpacity>
+          </Link>
+
+          <Link href="./timer" asChild>
+            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-orange-700' : 'bg-orange-500'
+              }`}>
+              <Text className="text-white font-medium text-center">
+                Workout Timer
+              </Text>
+            </TouchableOpacity>
+          </Link>
+
+          <Link href="./schedule" asChild>
+            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-teal-700' : 'bg-teal-500'
+              }`}>
+              <Text className="text-white font-medium text-center">
+                Schedule
+              </Text>
+            </TouchableOpacity>
+          </Link>
+          <Link href="./health" asChild>
+            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-pink-700' : 'bg-pink-500'
+              }`}>
+              <Text className="text-white font-medium text-center">
+                Health Sync
+              </Text>
+            </TouchableOpacity>
+          </Link>
+
+          <Link href="/log" asChild>
+            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-blue-700' : 'bg-blue-500'
+              }`}>
+              <Text className="text-white font-medium text-center">
+                Log manually
+              </Text>
+            </TouchableOpacity>
+          </Link>
         </View>
 
         {/* Weekly Steps Chart */}

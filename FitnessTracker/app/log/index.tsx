@@ -117,8 +117,8 @@ export default function LogActivityScreen() {
             placeholder={`Enter ${formData.type} count`}
             keyboardType="numeric"
             className={`border rounded-lg px-4 py-3 ${isDark
-                ? 'bg-gray-700 border-gray-600 text-white placeholder:text-gray-400'
-                : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
+              ? 'bg-gray-700 border-gray-600 text-white placeholder:text-gray-400'
+              : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
               }`}
           />
         </View>
@@ -179,8 +179,8 @@ export default function LogActivityScreen() {
             multiline
             numberOfLines={3}
             className={`border rounded-lg px-4 py-3 h-24 ${isDark
-                ? 'bg-gray-700 border-gray-600 text-white placeholder:text-gray-400'
-                : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
+              ? 'bg-gray-700 border-gray-600 text-white placeholder:text-gray-400'
+              : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
               }`}
           />
         </View>
