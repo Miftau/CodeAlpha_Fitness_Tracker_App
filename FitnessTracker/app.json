@@ -4,7 +4,7 @@
     "slug": "FitnessTracker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
+    "icon": "./src/assets/images/image.png",
     "scheme": "fitnesstracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -28,7 +28,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./src/assets/images/icon.png",
+          "image": "./src/assets/images/image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -41,7 +41,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./src/assets/images/icon.png",
+          "icon": "./src/assets/images/image.png",
           "color": "#ffffff",
           "sounds": [
             "./src/assets/sounds/workout.mp3"
