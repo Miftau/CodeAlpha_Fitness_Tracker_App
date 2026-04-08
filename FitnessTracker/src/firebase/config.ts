@@ -1,8 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
-// ⚠️ Replace with your Firebase project config
 const firebaseConfig = {
     apiKey: "AIzaSyCbsVunlJrgm3xvlB-IVOq3nPZWQ14i_2s",
     authDomain: "fitnesstracker-e1b70.firebaseapp.com",
@@ -13,12 +13,12 @@ const firebaseConfig = {
     measurementId: "G-E4KCCY8BEG"
 };
 
-// Prevent re-initialization
+// Prevent re-initialization on hot reload
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Auth with AsyncStorage persistence so the session survives app restarts
+export const auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+});
 
-// Enable offline persistence
-import { enableIndexedDbPersistence } from 'firebase/firestore';
-enableIndexedDbPersistence(db).catch(err => console.error("Persistance failed:", err));
+export const db = getFirestore(app);

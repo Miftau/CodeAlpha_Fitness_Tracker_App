@@ -1,239 +1,365 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, View, Text, StyleSheet, useColorScheme, TouchableOpacity } from 'react-native';
+import {
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  useColorScheme,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { useActivities } from '@/hooks/useActivities';
 import StatTile from '@/components/StatTile';
 import ChartBar from '@/components/ChartBar';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spinner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 4,
-    borderColor: '#e5e7eb',
-    borderTopColor: '#3b82f6',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
-  titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  statGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontWeight: '500',
-    marginBottom: 12,
-  },
-  activityContainer: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  activityTitle: {
-    fontWeight: '500',
-  },
-  activityNote: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  activityDate: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-  emptyContainer: {
-    padding: 16,
-    borderRadius: 8,
-  },
-  emptyText: {
-    textAlign: 'center',
-  },
-  chartsContainer: {
-    marginBottom: 24,
-  },
-});
+// ─── Quick-action card data ────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { label: 'Auto Tracker', icon: 'pulse' as const,    href: './tracker'  as const, color: '#8b5cf6' },
+  { label: 'Workout Timer', icon: 'timer' as const,   href: './timer'    as const, color: '#f59e0b' },
+  { label: 'Schedule',      icon: 'calendar' as const, href: './schedule' as const, color: '#10b981' },
+  { label: 'Health Sync',   icon: 'heart' as const,   href: './health'   as const, color: '#ec4899' },
+  { label: 'Log Activity',  icon: 'create' as const,  href: '/log'       as const, color: '#3b82f6' },
+] as const;
+
+// ─── Per-activity-type display helpers ────────────────────────────────────
+const ACTIVITY_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  steps:    { icon: 'footsteps',    color: '#6366f1' },
+  workout:  { icon: 'barbell',      color: '#8b5cf6' },
+  calories: { icon: 'flame',        color: '#f59e0b' },
+  weight:   { icon: 'scale',        color: '#10b981' },
+  sleep:    { icon: 'moon',         color: '#3b82f6' },
+};
 
 export default function DashboardScreen() {
   const isDark = useColorScheme() === 'dark';
-  const { activities, loading, error } = useActivities();
+  const { activities, loading } = useActivities();
 
-  // Mock weekly data for demo
+  // ── Palette ──────────────────────────────────────────────────────────────
+  const bg       = isDark ? '#0d1117' : '#f0f4ff';
+  const card     = isDark ? '#1c2333' : '#ffffff';
+  const surface  = isDark ? '#252d3d' : '#f8faff';
+  const textPri  = isDark ? '#f1f5f9' : '#0f172a';
+  const textSub  = isDark ? '#64748b' : '#94a3b8';
+  const border   = isDark ? '#1e293b' : '#e2e8f0';
+  const accentBg = isDark ? '#1e1b4b' : '#eef2ff';
+
+  // ── Derived stats ────────────────────────────────────────────────────────
+  const totalSteps    = activities.filter(a => a.type === 'steps').reduce((s, a) => s + a.value, 0);
+  const totalCalories = activities.filter(a => a.type === 'calories').reduce((s, a) => s + a.value, 0);
+  const workouts      = activities.filter(a => a.type === 'workout').length;
+
+  // Mock weekly chart data
   const weeklyData = [
-    { label: 'Mon', value: 8200, max: 10000 },
-    { label: 'Tue', value: 9500, max: 10000 },
-    { label: 'Wed', value: 7100, max: 10000 },
-    { label: 'Thu', value: 10200, max: 10000 },
-    { label: 'Fri', value: 8800, max: 10000 },
-    { label: 'Sat', value: 12000, max: 10000 },
-    { label: 'Sun', value: 6500, max: 10000 },
+    { label: 'Mon', value: 8200,  max: 12000 },
+    { label: 'Tue', value: 9500,  max: 12000 },
+    { label: 'Wed', value: 7100,  max: 12000 },
+    { label: 'Thu', value: 10200, max: 12000 },
+    { label: 'Fri', value: 8800,  max: 12000 },
+    { label: 'Sat', value: 12000, max: 12000 },
+    { label: 'Sun', value: 6500,  max: 12000 },
   ];
 
-  const totalSteps = activities.filter(a => a.type === 'steps').reduce((sum, a) => sum + a.value, 0);
-  const totalCalories = activities.filter(a => a.type === 'calories').reduce((sum, a) => sum + a.value, 0);
-  const workouts = activities.filter(a => a.type === 'workout').length;
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#111827' : '#f9fafb' }]}>
-        <View style={styles.centerContainer}>
-          <View style={styles.spinner} />
-          <Text style={[styles.loadingText, { color: isDark ? '#d1d5db' : '#374151' }]}>Loading...</Text>
-        </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: bg, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{
+          width: 56, height: 56, borderRadius: 28,
+          borderWidth: 4, borderColor: border, borderTopColor: '#6366f1',
+        }} />
+        <Text style={{ marginTop: 16, fontSize: 15, color: textSub, fontWeight: '500' }}>
+          Loading your stats…
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
-      <ScrollView style={{ padding: 16 }}>
-        <View style={{ marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: isDark ? '#ffffff' : '#111827'
-          }}>
-            Today&apos;s Progress
-          </Text>
-          <Link href="/log" asChild>
-            <TouchableOpacity style={{
-              padding: 12,
-              borderRadius: 24,
-              backgroundColor: isDark ? '#2563eb' : '#3b82f6'
-            }}>
-              <Ionicons name="add" size={24} color="white" />
-            </TouchableOpacity>
-          </Link>
+    <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── Hero Header ─────────────────────────────────────────────── */}
+        <View style={[styles.heroCard, { backgroundColor: isDark ? '#1e1b4b' : '#6366f1' }]}>
+          {/* Decorative circles */}
+          <View style={styles.decCircle1} />
+          <View style={styles.decCircle2} />
+
+          <View style={styles.heroContent}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroLabel}>Today · {today}</Text>
+              <Text style={styles.heroTitle}>Today's{'\n'}Progress</Text>
+              <View style={styles.heroBadge}>
+                <Ionicons name="trending-up" size={14} color="#ffffff" />
+                <Text style={styles.heroBadgeText}>Great pace!</Text>
+              </View>
+            </View>
+            <Link href="/log" asChild>
+              <TouchableOpacity style={styles.heroFab} activeOpacity={0.8}>
+                <Ionicons name="add" size={28} color="#6366f1" />
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
 
-        {/* Stats Grid */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-          <StatTile title="Steps" value={totalSteps.toLocaleString()} subtitle="of 10,000" />
-          <StatTile title="Calories" value={`${totalCalories} kcal`} subtitle="burned" />
-          <StatTile title="Workouts" value={workouts.toString()} subtitle="today" />
-          <StatTile title="Avg Sleep" value="7.2h" subtitle="last 7 days" />
-        </View>
+        <View style={styles.pageContent}>
 
+          {/* ── Stats Grid ────────────────────────────────────────────── */}
+          <Text style={[styles.sectionHeading, { color: textPri }]}>Today's Stats</Text>
+          <View style={styles.statsGrid}>
+            <StatTile
+              title="Steps"
+              value={totalSteps.toLocaleString() || '0'}
+              subtitle="of 10,000 goal"
+              icon="footsteps"
+              accentColor="#6366f1"
+            />
+            <StatTile
+              title="Calories"
+              value={totalCalories ? `${totalCalories}` : '0'}
+              subtitle="kcal burned"
+              icon="flame"
+              accentColor="#f59e0b"
+            />
+            <StatTile
+              title="Workouts"
+              value={workouts.toString()}
+              subtitle="sessions today"
+              icon="barbell"
+              accentColor="#8b5cf6"
+            />
+            <StatTile
+              title="Sleep"
+              value="7.2h"
+              subtitle="last 7-day avg"
+              icon="moon"
+              accentColor="#3b82f6"
+            />
+          </View>
 
-        <View className="grid grid-cols-2 gap-4 mt-6">
-          <Link href="./tracker" asChild>
-            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-purple-700' : 'bg-purple-500'
-              }`}>
-              <Text className="text-white font-medium text-center">
-                Auto Tracker
-              </Text>
-            </TouchableOpacity>
-          </Link>
+          {/* ── Quick Actions ─────────────────────────────────────────── */}
+          <Text style={[styles.sectionHeading, { color: textPri }]}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            {QUICK_ACTIONS.map(({ label, icon, href, color }) => (
+              <Link key={label} href={href} asChild>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[
+                    styles.actionCard,
+                    { backgroundColor: card, shadowColor: color },
+                  ]}
+                >
+                  <View style={[styles.actionIconWrap, { backgroundColor: color + (isDark ? '33' : '1a') }]}>
+                    <Ionicons name={icon} size={22} color={color} />
+                  </View>
+                  <Text style={[styles.actionLabel, { color: textPri }]}>{label}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={textSub} style={{ marginTop: 'auto' }} />
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
 
-          <Link href="./timer" asChild>
-            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-orange-700' : 'bg-orange-500'
-              }`}>
-              <Text className="text-white font-medium text-center">
-                Workout Timer
-              </Text>
-            </TouchableOpacity>
-          </Link>
+          {/* ── Weekly Chart ──────────────────────────────────────────── */}
+          <View style={[styles.sectionCard, { backgroundColor: card, shadowColor: isDark ? '#000' : '#6366f1' }]}>
+            <View style={styles.sectionCardHeader}>
+              <View>
+                <Text style={[styles.sectionHeadingInline, { color: textPri }]}>Weekly Steps</Text>
+                <Text style={[styles.sectionSubtitle, { color: textSub }]}>Last 7 days overview</Text>
+              </View>
+              <View style={[styles.summaryBadge, { backgroundColor: accentBg }]}>
+                <Ionicons name="bar-chart" size={14} color="#6366f1" />
+                <Text style={styles.summaryBadgeText}>
+                  {weeklyData.reduce((s, d) => s + d.value, 0).toLocaleString()} steps
+                </Text>
+              </View>
+            </View>
+            <ChartBar data={weeklyData} height={150} width={SCREEN_WIDTH - 80} />
+          </View>
 
-          <Link href="./schedule" asChild>
-            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-teal-700' : 'bg-teal-500'
-              }`}>
-              <Text className="text-white font-medium text-center">
-                Schedule
-              </Text>
-            </TouchableOpacity>
-          </Link>
-          <Link href="./health" asChild>
-            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-pink-700' : 'bg-pink-500'
-              }`}>
-              <Text className="text-white font-medium text-center">
-                Health Sync
-              </Text>
-            </TouchableOpacity>
-          </Link>
+          {/* ── Recent Activity Log ───────────────────────────────────── */}
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionHeadingInline, { color: textPri }]}>Recent Log</Text>
+            <Link href="/log" asChild>
+              <TouchableOpacity>
+                <Text style={{ color: '#6366f1', fontSize: 13, fontWeight: '600' }}>+ Add</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
 
-          <Link href="/log" asChild>
-            <TouchableOpacity className={`p-4 rounded-xl ${isDark ? 'bg-blue-700' : 'bg-blue-500'
-              }`}>
-              <Text className="text-white font-medium text-center">
-                Log manually
-              </Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-
-        {/* Weekly Steps Chart */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{
-            fontWeight: '500',
-            marginBottom: 12,
-            color: isDark ? '#ffffff' : '#111827'
-          }}>
-            Weekly Steps
-          </Text>
-          <ChartBar data={weeklyData} height={140} width={300} />
-        </View>
-
-        {/* Recent Activities */}
-        <View>
-          <Text style={{
-            fontWeight: '500',
-            marginBottom: 12,
-            color: isDark ? '#ffffff' : '#111827'
-          }}>
-            Recent Log
-          </Text>
           {activities.length === 0 ? (
-            <View style={{
-              padding: 16,
-              borderRadius: 8,
-              backgroundColor: isDark ? '#1f2937' : '#ffffff'
-            }}>
-              <Text style={{
-                textAlign: 'center',
-                color: isDark ? '#9ca3af' : '#6b7280'
-              }}>
-                No activities logged yet. Tap “+” to add!
+            <View style={[styles.emptyCard, { backgroundColor: card, borderColor: border }]}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: accentBg }]}>
+                <Ionicons name="fitness" size={28} color="#6366f1" />
+              </View>
+              <Text style={[styles.emptyTitle, { color: textPri }]}>No activities yet</Text>
+              <Text style={[styles.emptySubtitle, { color: textSub }]}>
+                Tap the + button to log your first activity today.
               </Text>
             </View>
           ) : (
-            activities.map((act) => (
-              <View
-                key={act.id}
-                style={[styles.activityContainer, { backgroundColor: isDark ? '#1f2937' : '#ffffff' }]}
-              >
-                <Text style={[styles.activityTitle, { color: isDark ? '#ffffff' : '#111827' }]}>
-                  {act.type.charAt(0).toUpperCase() + act.type.slice(1)}: {act.value} {act.unit}
-                </Text>
-                {act.notes && (
-                  <Text style={[styles.activityNote, { color: isDark ? '#9ca3af' : '#6b7280' }]}>
-                    {act.notes}
+            activities.slice(0, 5).map((act) => {
+              const meta = ACTIVITY_META[act.type] ?? { icon: 'ellipse', color: '#6b7280' };
+              return (
+                <View
+                  key={act.id}
+                  style={[styles.logItem, { backgroundColor: card, borderColor: border, shadowColor: isDark ? '#000' : meta.color }]}
+                >
+                  <View style={[styles.logIcon, { backgroundColor: meta.color + '22' }]}>
+                    <Ionicons name={meta.icon} size={20} color={meta.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.logTitle, { color: textPri }]}>
+                      {act.type.charAt(0).toUpperCase() + act.type.slice(1)}
+                    </Text>
+                    <Text style={[styles.logValue, { color: meta.color }]}>
+                      {act.value} {act.unit}
+                    </Text>
+                    {act.notes ? (
+                      <Text style={[styles.logNote, { color: textSub }]} numberOfLines={1}>
+                        {act.notes}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={[styles.logDate, { color: textSub }]}>
+                    {new Date(act.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </Text>
-                )}
-                <Text style={[styles.activityDate, { color: isDark ? '#6b7280' : '#9ca3af' }]}>
-                  {new Date(act.date).toLocaleDateString()}
-                </Text>
-              </View>
-            ))
+                </View>
+              );
+            })
           )}
+
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// ─── Static styles ──────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  // Hero
+  heroCard: {
+    marginHorizontal: 0,
+    paddingTop: 32,
+    paddingBottom: 36,
+    paddingHorizontal: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  decCircle1: {
+    position: 'absolute', width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.07)', top: -60, right: -40,
+  },
+  decCircle2: {
+    position: 'absolute', width: 130, height: 130, borderRadius: 65,
+    backgroundColor: 'rgba(255,255,255,0.05)', bottom: -40, left: 20,
+  },
+  heroContent: {
+    flexDirection: 'row', alignItems: 'flex-start',
+  },
+  heroLabel: {
+    fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600',
+    letterSpacing: 0.5, marginBottom: 6, textTransform: 'uppercase',
+  },
+  heroTitle: {
+    fontSize: 34, fontWeight: '800', color: '#ffffff',
+    letterSpacing: -1, lineHeight: 40,
+  },
+  heroBadge: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 14,
+    backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start', gap: 5,
+  },
+  heroBadgeText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
+  heroFab: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2, shadowRadius: 10, elevation: 8, marginTop: 4,
+  },
+
+  // Page
+  pageContent: { paddingHorizontal: 20, paddingTop: 24 },
+
+  // Section headings
+  sectionHeading: {
+    fontSize: 18, fontWeight: '700', marginBottom: 14, letterSpacing: -0.3,
+  },
+  sectionHeadingInline: {
+    fontSize: 16, fontWeight: '700', letterSpacing: -0.3,
+  },
+  sectionSubtitle: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  sectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 12, marginTop: 8,
+  },
+
+  // Stats grid
+  statsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 28,
+  },
+
+  // Quick Actions
+  actionsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 28,
+  },
+  actionCard: {
+    width: '46%', borderRadius: 18, padding: 16,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
+    flexDirection: 'column', gap: 8,
+  },
+  actionIconWrap: {
+    width: 42, height: 42, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
+
+  // Chart section card
+  sectionCard: {
+    borderRadius: 22, padding: 20, marginBottom: 28,
+    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 5,
+  },
+  sectionCardHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: 18,
+  },
+  summaryBadge: {
+    flexDirection: 'row', alignItems: 'center', borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5, gap: 5,
+  },
+  summaryBadgeText: { fontSize: 12, fontWeight: '700', color: '#6366f1' },
+
+  // Activity log
+  logItem: {
+    flexDirection: 'row', alignItems: 'center', borderRadius: 18,
+    padding: 16, marginBottom: 10, borderWidth: 1,
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    gap: 14,
+  },
+  logIcon: {
+    width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+  },
+  logTitle: { fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
+  logValue: { fontSize: 13, fontWeight: '600', marginTop: 2 },
+  logNote: { fontSize: 12, marginTop: 2 },
+  logDate: { fontSize: 11, fontWeight: '500', textAlign: 'right' },
+
+  // Empty state
+  emptyCard: {
+    borderRadius: 22, padding: 32, borderWidth: 1,
+    alignItems: 'center', marginBottom: 16,
+  },
+  emptyIconWrap: {
+    width: 64, height: 64, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
+  emptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+});

@@ -1,19 +1,23 @@
 import React from 'react';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { View, Text } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function Index() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Loading...</Text></View>;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0d1117' }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
   }
 
-  // Redirect to appropriate screen based on auth state
   if (!user) {
     return <Redirect href="/auth" />;
   }
 
-  return <Redirect href="/dashboard" />;
+  // Redirect to drawer navigator root
+  return <Redirect href="./(drawer)/(tabs)/index" />;
 }

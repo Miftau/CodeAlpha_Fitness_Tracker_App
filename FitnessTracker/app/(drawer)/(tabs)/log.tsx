@@ -11,11 +11,11 @@ import { useActivities } from '@/hooks/useActivities';
 import { Ionicons } from '@expo/vector-icons';
 
 const ACTIVITY_TYPES = [
-  { label: 'Steps', value: 'steps', unit: 'steps', icon: 'footsteps' as const, color: '#6366f1' },
-  { label: 'Workout', value: 'workout', unit: 'minutes', icon: 'barbell' as const, color: '#8b5cf6' },
-  { label: 'Calories', value: 'calories', unit: 'kcal', icon: 'flame' as const, color: '#f59e0b' },
-  { label: 'Weight', value: 'weight', unit: 'kg', icon: 'scale' as const, color: '#10b981' },
-  { label: 'Sleep', value: 'sleep', unit: 'hours', icon: 'moon' as const, color: '#3b82f6' },
+  { label: 'Steps',    value: 'steps',    unit: 'steps',   icon: 'footsteps'  as const, color: '#6366f1' },
+  { label: 'Workout',  value: 'workout',  unit: 'minutes', icon: 'barbell'    as const, color: '#8b5cf6' },
+  { label: 'Calories', value: 'calories', unit: 'kcal',    icon: 'flame'      as const, color: '#f59e0b' },
+  { label: 'Weight',   value: 'weight',   unit: 'kg',      icon: 'scale'      as const, color: '#10b981' },
+  { label: 'Sleep',    value: 'sleep',    unit: 'hours',   icon: 'moon'       as const, color: '#3b82f6' },
 ];
 
 export default function LogActivityScreen() {
@@ -23,13 +23,13 @@ export default function LogActivityScreen() {
   const insets = useSafeAreaInsets();
   const { logActivity } = useActivities();
 
-  const bg = isDark ? '#0d1117' : '#f0f4ff';
-  const card = isDark ? '#1c2333' : '#ffffff';
-  const text = isDark ? '#f1f5f9' : '#0f172a';
-  const sub = isDark ? '#64748b' : '#94a3b8';
+  const bg     = isDark ? '#0d1117' : '#f0f4ff';
+  const card   = isDark ? '#1c2333' : '#ffffff';
+  const text   = isDark ? '#f1f5f9' : '#0f172a';
+  const sub    = isDark ? '#64748b' : '#94a3b8';
   const border = isDark ? '#2e3a50' : '#e2e8f0';
-  const surf = isDark ? '#252d3d' : '#f8faff';
-  const ph = isDark ? '#4b5563' : '#94a3b8';
+  const surf   = isDark ? '#252d3d' : '#f8faff';
+  const ph     = isDark ? '#4b5563' : '#94a3b8';
 
   const [selectedType, setSelectedType] = useState(ACTIVITY_TYPES[0]);
   const [value, setValue] = useState('');

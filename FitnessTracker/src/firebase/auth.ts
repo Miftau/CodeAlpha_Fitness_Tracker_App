@@ -5,6 +5,7 @@ import {
     signOut,
     User,
     onAuthStateChanged,
+    sendPasswordResetEmail,
 } from 'firebase/auth';
 
 export const login = async (email: string, password: string) => {
@@ -35,4 +36,12 @@ export const logout = async () => {
 
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
     return onAuthStateChanged(auth, callback);
+};
+
+export const resetPassword = async (email: string) => {
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
 };

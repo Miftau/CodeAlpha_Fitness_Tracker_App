@@ -38,7 +38,7 @@ export default function TrackerScreen() {
                 Alert.alert(
                     'Success',
                     'Tracking data saved successfully!',
-                    [{ text: 'OK', onPress: () => router.push('/dashboard') }]
+                    [{ text: 'OK', onPress: () => router.push('/(drawer)/(tabs)/index') }]
                 );
             } else {
                 Alert.alert('No Data', 'No activity was recorded.');

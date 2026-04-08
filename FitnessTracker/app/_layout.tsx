@@ -6,18 +6,18 @@ import '../global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        {/* Main drawer navigator (which contains tabs inside) */}
+        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+        {/* Auth flow */}
+        <Stack.Screen name="auth/index" options={{ headerShown: false }} />
+        {/* Secondary stack screens */}
+        <Stack.Screen name="tracker/index" options={{ title: 'Auto Tracker', headerBackTitle: 'Back' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
