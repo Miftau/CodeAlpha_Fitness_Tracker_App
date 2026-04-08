@@ -34,14 +34,15 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { activities, loading, refetch }  = useActivities();
   const { goals }                = useGoals();
-  const { weeklyData, loading: chartLoading, refetch: refetchWeekly } = useWeeklySteps(goals.steps) as any;
+  const { weeklyData, loading: chartLoading, refetch: refetchWeekly } = useWeeklySteps(goals.steps);
 
   // Refresh data explicitly every time the user tabs back here
   useFocusEffect(
     useCallback(() => {
       if (refetch) refetch();
       if (refetchWeekly) refetchWeekly();
-    }, [refetch, refetchWeekly])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   // ── Palette ──────────────────────────────────────────────────────────────
@@ -53,13 +54,13 @@ export default function DashboardScreen() {
   const accentBg = isDark ? '#1e1b4b' : '#eef2ff';
 
   // ── Today's totals ───────────────────────────────────────────────────────
-  const totalSteps    = activities.filter(a => a.type === 'steps').reduce((s, a) => s + a.value, 0);
-  const totalCalories = activities.filter(a => a.type === 'calories').reduce((s, a) => s + a.value, 0);
+  const totalSteps    = activities.filter(a => a.type === 'steps').reduce((sum, a) => sum + a.value, 0);
+  const totalCalories = activities.filter(a => a.type === 'calories').reduce((sum, a) => sum + a.value, 0);
   const workouts      = activities.filter(a => a.type === 'workout').length;
   const avgSleep      = (() => {
     const sleepActs = activities.filter(a => a.type === 'sleep');
     if (!sleepActs.length) return 0;
-    return sleepActs.reduce((s, a) => s + a.value, 0) / sleepActs.length;
+    return sleepActs.reduce((sum, a) => sum + a.value, 0) / sleepActs.length;
   })();
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -83,31 +84,31 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
 
         {/* ── Hero Header ─────────────────────────────────────────────── */}
-        <View style={[s.heroCard, { backgroundColor: isDark ? '#1e1b4b' : '#6366f1', paddingTop: insets.top + 20 }]}>
-          <View style={s.decCircle1} />
-          <View style={s.decCircle2} />
-          <View style={s.heroContent}>
+        <View style={[styles.heroCard, { backgroundColor: isDark ? '#1e1b4b' : '#6366f1', paddingTop: insets.top + 20 }]}>
+          <View style={styles.decCircle1} />
+          <View style={styles.decCircle2} />
+          <View style={styles.heroContent}>
             <View style={{ flex: 1 }}>
-              <Text style={s.heroLabel}>{today}</Text>
-              <Text style={s.heroTitle}>Today's{'\n'}Progress</Text>
-              <View style={s.heroBadge}>
+              <Text style={styles.heroLabel}>{today}</Text>
+              <Text style={styles.heroTitle}>Today's{'\n'}Progress</Text>
+              <View style={styles.heroBadge}>
                 <Ionicons name="trending-up" size={14} color="#ffffff" />
-                <Text style={s.heroBadgeText}>Keep it up!</Text>
+                <Text style={styles.heroBadgeText}>Keep it up!</Text>
               </View>
             </View>
             <Link href="/log" asChild>
-              <TouchableOpacity style={s.heroFab} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.heroFab} activeOpacity={0.8}>
                 <Ionicons name="add" size={28} color="#6366f1" />
               </TouchableOpacity>
             </Link>
           </View>
         </View>
 
-        <View style={s.page}>
+        <View style={styles.page}>
 
           {/* ── Stats Grid ────────────────────────────────────────────── */}
-          <Text style={[s.sectionTitle, { color: textPri }]}>Today's Stats</Text>
-          <View style={s.statsGrid}>
+          <Text style={[styles.sectionTitle, { color: textPri }]}>Today's Stats</Text>
+          <View style={styles.statsGrid}>
             <StatTile
               title="Steps"
               value={totalSteps.toLocaleString()}
@@ -139,17 +140,17 @@ export default function DashboardScreen() {
           </View>
 
           {/* ── Weekly Chart ──────────────────────────────────────────── */}
-          <View style={[s.sectionCard, { backgroundColor: card, shadowColor: isDark ? '#000' : '#6366f1' }]}>
-            <View style={s.sectionCardHeader}>
+          <View style={[styles.sectionCard, { backgroundColor: card, shadowColor: isDark ? '#000' : '#6366f1' }]}>
+            <View style={styles.sectionCardHeader}>
               <View>
-                <Text style={[s.sectionTitleInline, { color: textPri }]}>Weekly Steps</Text>
-                <Text style={[s.sectionSubtitle, { color: textSub }]}>Last 7 days</Text>
+                <Text style={[styles.sectionTitleInline, { color: textPri }]}>Weekly Steps</Text>
+                <Text style={[styles.sectionSubtitle, { color: textSub }]}>Last 7 days</Text>
               </View>
               {!chartLoading && (
-                <View style={[s.badge, { backgroundColor: accentBg }]}>
+                <View style={[styles.badge, { backgroundColor: accentBg }]}>
                   <Ionicons name="bar-chart" size={13} color="#6366f1" />
-                  <Text style={s.badgeText}>
-                    {weeklyData.reduce((s, d) => s + d.value, 0).toLocaleString()} steps
+                  <Text style={styles.badgeText}>
+                    {weeklyData.reduce((acc: number, d) => acc + d.value, 0).toLocaleString()} steps
                   </Text>
                 </View>
               )}
@@ -165,8 +166,8 @@ export default function DashboardScreen() {
           </View>
 
           {/* ── Recent Log Header ─────────────────────────────────────── */}
-          <View style={s.rowHeader}>
-            <Text style={[s.sectionTitleInline, { color: textPri }]}>Recent Log</Text>
+          <View style={styles.rowHeader}>
+            <Text style={[styles.sectionTitleInline, { color: textPri }]}>Recent Log</Text>
             <Link href="/log" asChild>
               <TouchableOpacity>
                 <Text style={{ color: '#6366f1', fontSize: 13, fontWeight: '700' }}>+ Add</Text>
@@ -175,12 +176,12 @@ export default function DashboardScreen() {
           </View>
 
           {activities.length === 0 ? (
-            <View style={[s.emptyCard, { backgroundColor: card, borderColor: border }]}>
-              <View style={[s.emptyIcon, { backgroundColor: accentBg }]}>
+            <View style={[styles.emptyCard, { backgroundColor: card, borderColor: border }]}>
+              <View style={[styles.emptyIcon, { backgroundColor: accentBg }]}>
                 <Ionicons name="fitness" size={28} color="#6366f1" />
               </View>
-              <Text style={[s.emptyTitle, { color: textPri }]}>No activities yet</Text>
-              <Text style={[s.emptySubtitle, { color: textSub }]}>
+              <Text style={[styles.emptyTitle, { color: textPri }]}>No activities yet</Text>
+              <Text style={[styles.emptySubtitle, { color: textSub }]}>
                 Tap the + button to log your first activity today.
               </Text>
             </View>
@@ -190,23 +191,23 @@ export default function DashboardScreen() {
               return (
                 <View
                   key={act.id}
-                  style={[s.logItem, { backgroundColor: card, borderColor: border, shadowColor: meta.color }]}
+                  style={[styles.logItem, { backgroundColor: card, borderColor: border, shadowColor: meta.color }]}
                 >
-                  <View style={[s.logIconWrap, { backgroundColor: meta.color + '22' }]}>
+                  <View style={[styles.logIconWrap, { backgroundColor: meta.color + '22' }]}>
                     <Ionicons name={meta.icon} size={20} color={meta.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.logTitle, { color: textPri }]}>
+                    <Text style={[styles.logTitle, { color: textPri }]}>
                       {act.type.charAt(0).toUpperCase() + act.type.slice(1)}
                     </Text>
-                    <Text style={[s.logValue, { color: meta.color }]}>
+                    <Text style={[styles.logValue, { color: meta.color }]}>
                       {act.value} {act.unit}
                     </Text>
                     {act.notes ? (
-                      <Text style={[s.logNote, { color: textSub }]} numberOfLines={1}>{act.notes}</Text>
+                      <Text style={[styles.logNote, { color: textSub }]} numberOfLines={1}>{act.notes}</Text>
                     ) : null}
                   </View>
-                  <Text style={[s.logDate, { color: textSub }]}>
+                  <Text style={[styles.logDate, { color: textSub }]}>
                     {new Date(act.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </Text>
                 </View>
@@ -221,7 +222,7 @@ export default function DashboardScreen() {
 }
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
+const styles = StyleSheet.create({
   heroCard: {
     paddingTop: 32, paddingBottom: 36, paddingHorizontal: 24, overflow: 'hidden',
   },
