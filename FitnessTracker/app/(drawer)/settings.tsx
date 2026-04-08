@@ -13,6 +13,7 @@ import {
   disableDailyReminders, 
   getNotificationPreference 
 } from '@/services/notificationService';
+import Constants from 'expo-constants';
 
 export default function SettingsScreen() {
   const isDark = useColorScheme() === 'dark';
@@ -136,8 +137,14 @@ export default function SettingsScreen() {
     rowTitle: { fontSize: 16, fontWeight: '600', color: text },
     rowSub: { fontSize: 12, color: sub, marginTop: 2 },
     
+    // App Info
+    appInfoCard: { alignItems: 'center', marginTop: 16, marginBottom: 8 },
+    appName: { fontSize: 16, fontWeight: '800', color: text, letterSpacing: 0.5 },
+    appVersion: { fontSize: 12, color: sub, marginTop: 4, fontWeight: '500' },
+    appDev: { fontSize: 11, color: sub, marginTop: 2, opacity: 0.7 },
+
     // Logout
-    logoutBtn: { backgroundColor: isDark ? '#3f1a1d' : '#fee2e2', borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 20, marginBottom: 40, borderWidth: 1, borderColor: isDark ? '#7f1d1d' : '#fca5a5' },
+    logoutBtn: { backgroundColor: isDark ? '#3f1a1d' : '#fee2e2', borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 12, marginBottom: 40, borderWidth: 1, borderColor: isDark ? '#7f1d1d' : '#fca5a5' },
     logoutText: { color: '#ef4444', fontSize: 16, fontWeight: '700' }
   });
 
@@ -233,6 +240,12 @@ export default function SettingsScreen() {
               thumbColor={notificationsEnabled ? '#f59e0b' : '#cbd5e1'}
             />
           </View>
+        </View>
+
+        <View style={s.appInfoCard}>
+          <Text style={s.appName}>{Constants.expoConfig?.name || 'Fitness Tracker'}</Text>
+          <Text style={s.appVersion}>Version {Constants.expoConfig?.version || '1.0.0'}</Text>
+          <Text style={s.appDev}>Developer: Yusuf Babatunde Muftaudeen</Text>
         </View>
 
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
