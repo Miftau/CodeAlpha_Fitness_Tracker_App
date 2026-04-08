@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActivities, useWeeklySteps } from '@/hooks/useActivities';
 import { useGoals } from '@/hooks/useGoals';
+import { useWorkoutScheduler } from '@/hooks/useWorkoutScheduler';
 import StatTile from '@/components/StatTile';
 import ChartBar from '@/components/ChartBar';
 import { Link } from 'expo-router';
@@ -35,12 +36,14 @@ export default function DashboardScreen() {
   const { activities, loading, refetch }  = useActivities();
   const { goals }                = useGoals();
   const { weeklyData, loading: chartLoading, refetch: refetchWeekly } = useWeeklySteps(goals.steps);
+  const { scheduledWorkouts, refetch: refetchSchedules } = useWorkoutScheduler();
 
   // Refresh data explicitly every time the user tabs back here
   useFocusEffect(
     useCallback(() => {
       if (refetch) refetch();
       if (refetchWeekly) refetchWeekly();
+      if (refetchSchedules) refetchSchedules();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
@@ -138,6 +141,45 @@ export default function DashboardScreen() {
               accentColor="#3b82f6"
             />
           </View>
+
+          {/* ── Next Workout Preview ───────────────────────────────────── */}
+          {(() => {
+            const upcoming = scheduledWorkouts
+              .filter(w => !w.completed && new Date(w.scheduledTime) > new Date())
+              .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())[0];
+            
+            if (!upcoming) return null;
+
+            return (
+              <Link href="/schedule" asChild>
+                <TouchableOpacity activeOpacity={0.9}>
+                  <View style={[styles.sectionCard, { backgroundColor: card, shadowColor: isDark ? '#000' : '#6366f1', marginBottom: 28 }]}>
+                    <View style={styles.sectionCardHeader}>
+                      <View>
+                        <Text style={[styles.sectionTitleInline, { color: textPri }]}>Up Next</Text>
+                        <Text style={[styles.sectionSubtitle, { color: textSub }]}>Scheduled Workout</Text>
+                      </View>
+                      <View style={[styles.badge, { backgroundColor: isDark ? '#1e1b4b' : '#6366f1' + '15' }]}>
+                        <Ionicons name="notifications" size={13} color="#6366f1" />
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                      <View style={[styles.logIconWrap, { backgroundColor: '#6366f1' + '22', marginRight: 12 }]}>
+                        <Ionicons name="time" size={22} color="#6366f1" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.logTitle, { color: textPri, fontSize: 16 }]}>{upcoming.title}</Text>
+                        <Text style={[styles.logValue, { color: '#6366f1' }]}>
+                          {new Date(upcoming.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(upcoming.scheduledTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={textSub} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Link>
+            );
+          })()}
 
           {/* ── Weekly Chart ──────────────────────────────────────────── */}
           <View style={[styles.sectionCard, { backgroundColor: card, shadowColor: isDark ? '#000' : '#6366f1' }]}>

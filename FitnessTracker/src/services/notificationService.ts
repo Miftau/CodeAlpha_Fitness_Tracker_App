@@ -6,7 +6,6 @@ const NOTIFICATIONS_KEY = '@fitness_notifications_enabled';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,

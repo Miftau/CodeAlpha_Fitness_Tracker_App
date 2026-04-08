@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    Animated,
+    Platform,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -14,18 +16,41 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
     onSchedule: () => void;
+    initialData?: {
+      id: string;
+      title: string;
+      description: string;
+      scheduledTime: Date;
+    };
+    onUpdate?: (id: string, updates: any) => Promise<void>;
+    onCancelEdit?: () => void;
 }
 
-export default function WorkoutScheduler({ onSchedule }: Props) {
+export default function WorkoutScheduler({ onSchedule, initialData, onUpdate, onCancelEdit }: Props) {
     const isDark = useColorScheme() === 'dark';
-    const { scheduleWorkout, loading } = useWorkoutScheduler();
+    const { scheduleWorkout, loading: hookLoading } = useWorkoutScheduler();
+    const [localLoading, setLocalLoading] = useState(false);
+    const loading = hookLoading || localLoading;
 
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        scheduledTime: new Date(Date.now() + 3600000),
+        title: initialData?.title ?? '',
+        description: initialData?.description ?? '',
+        scheduledTime: initialData?.scheduledTime ?? new Date(Date.now() + 3600000),
     });
+
+    // Sync form with initialData if it changes (e.g. when clicking Edit on a different card)
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                title: initialData.title,
+                description: initialData.description,
+                scheduledTime: new Date(initialData.scheduledTime),
+            });
+        }
+    }, [initialData]);
+
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
     const [titleFocused, setTitleFocused] = useState(false);
     const [descFocused, setDescFocused] = useState(false);
 
@@ -35,45 +60,89 @@ export default function WorkoutScheduler({ onSchedule }: Props) {
         border: isDark ? '#2e3a50' : '#e2e8f0',
         borderFocus: '#6366f1',
         text: isDark ? '#f1f5f9' : '#0f172a',
-        subtext: isDark ? '#94a3b8' : '#64748b',
+        subtext: isDark ? '#64748b' : '#94a3b8',
         accent: '#6366f1',
         accentSoft: isDark ? '#312e81' : '#eef2ff',
         buttonBg: '#6366f1',
         buttonDisabled: isDark ? '#374151' : '#c7d2fe',
         placeholder: isDark ? '#4b5563' : '#94a3b8',
-        dateBadge: isDark ? '#1e3a5f' : '#dbeafe',
-        dateBadgeText: isDark ? '#93c5fd' : '#1d4ed8',
+        dateBadge: isDark ? '#1b2a4e' : '#eef2ff',
+        dateBadgeText: isDark ? '#60a5fa' : '#4f46e5',
         shadow: isDark ? '#000000' : '#6366f1',
     };
 
-    const handleSchedule = async () => {
+    const handleAction = async () => {
         if (!formData.title.trim()) {
-            alert('Please enter a workout title');
             return;
         }
+        setLocalLoading(true);
         try {
-            await scheduleWorkout({
-                title: formData.title,
-                description: formData.description,
-                scheduledTime: formData.scheduledTime,
-            });
-            onSchedule();
-            setFormData({
-                title: '',
-                description: '',
-                scheduledTime: new Date(Date.now() + 3600000),
-            });
+            if (initialData && onUpdate) {
+                await onUpdate(initialData.id, {
+                    title: formData.title,
+                    description: formData.description,
+                    scheduledTime: formData.scheduledTime,
+                });
+                if (onCancelEdit) onCancelEdit();
+            } else {
+                await scheduleWorkout({
+                    title: formData.title,
+                    description: formData.description,
+                    scheduledTime: formData.scheduledTime,
+                });
+                onSchedule();
+            }
+            // Reset if not editing
+            if (!initialData) {
+              setFormData({
+                  title: '',
+                  description: '',
+                  scheduledTime: new Date(Date.now() + 3600000),
+              });
+            }
         } catch (error) {
-            console.error('Error scheduling workout:', error);
-            alert('Failed to schedule workout');
+            console.error('Error in WorkoutScheduler action:', error);
+        } finally {
+            setLocalLoading(false);
         }
     };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
-        if (selectedDate) {
-            setFormData({ ...formData, scheduledTime: selectedDate });
+        // On Android, the picker unmounts immediately on selection
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+            if (event.type === 'set' && selectedDate) {
+                const newDate = new Date(formData.scheduledTime);
+                if (pickerMode === 'date') {
+                    newDate.setFullYear(selectedDate.getFullYear());
+                    newDate.setMonth(selectedDate.getMonth());
+                    newDate.setDate(selectedDate.getDate());
+                    setFormData({ ...formData, scheduledTime: newDate });
+                    // Immediately trigger time picker after date is set
+                    setTimeout(() => {
+                        setPickerMode('time');
+                        setShowDatePicker(true);
+                    }, 100);
+                } else {
+                    newDate.setHours(selectedDate.getHours());
+                    newDate.setMinutes(selectedDate.getMinutes());
+                    setFormData({ ...formData, scheduledTime: newDate });
+                }
+            }
+        } else {
+            // iOS remains visible and handles datetime mode well
+            if (selectedDate) {
+                setFormData({ ...formData, scheduledTime: selectedDate });
+            }
+            if (event.type === 'dismissed') {
+                setShowDatePicker(false);
+            }
         }
+    };
+
+    const showPicker = () => {
+        setPickerMode('date');
+        setShowDatePicker(true);
     };
 
     const formatDate = (date: Date) => {
@@ -86,158 +155,42 @@ export default function WorkoutScheduler({ onSchedule }: Props) {
         });
     };
 
-    const styles = StyleSheet.create({
-        card: {
-            backgroundColor: colors.card,
-            borderRadius: 24,
-            padding: 24,
-            shadowColor: colors.shadow,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: isDark ? 0.4 : 0.12,
-            shadowRadius: 20,
-            elevation: 10,
-        },
-        headerRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 24,
-        },
-        iconBadge: {
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            backgroundColor: colors.accentSoft,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-        },
-        title: {
-            fontSize: 20,
-            fontWeight: '700',
-            color: colors.text,
-            letterSpacing: -0.3,
-        },
-        subtitle: {
-            fontSize: 13,
-            color: colors.subtext,
-            marginTop: 1,
-        },
-        fieldGroup: {
-            marginBottom: 16,
-        },
-        label: {
-            fontSize: 12,
-            fontWeight: '600',
-            color: colors.subtext,
-            letterSpacing: 0.5,
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            marginLeft: 2,
-        },
-        inputWrapper: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.surface,
-            borderRadius: 14,
-            borderWidth: 1.5,
-            paddingHorizontal: 14,
-        },
-        inputIcon: {
-            marginRight: 10,
-        },
-        input: {
-            flex: 1,
-            paddingVertical: 13,
-            fontSize: 15,
-            color: colors.text,
-        },
-        textAreaWrapper: {
-            backgroundColor: colors.surface,
-            borderRadius: 14,
-            borderWidth: 1.5,
-            paddingHorizontal: 14,
-            paddingTop: 12,
-        },
-        textArea: {
-            fontSize: 15,
-            color: colors.text,
-            minHeight: 70,
-            textAlignVertical: 'top',
-        },
-        divider: {
-            height: 1,
-            backgroundColor: colors.border,
-            marginVertical: 16,
-        },
-        dateLabel: {
-            fontSize: 12,
-            fontWeight: '600',
-            color: colors.subtext,
-            letterSpacing: 0.5,
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            marginLeft: 2,
-        },
-        dateButton: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.dateBadge,
-            borderRadius: 14,
-            paddingVertical: 13,
-            paddingHorizontal: 16,
-        },
-        dateButtonText: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: colors.dateBadgeText,
-            marginLeft: 8,
-            flex: 1,
-        },
-        dateChevron: {
-            marginLeft: 'auto',
-        },
-        scheduleButton: {
-            backgroundColor: loading ? colors.buttonDisabled : colors.buttonBg,
-            borderRadius: 16,
-            paddingVertical: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: 8,
-            shadowColor: colors.accent,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: loading ? 0 : 0.35,
-            shadowRadius: 10,
-            elevation: loading ? 0 : 6,
-        },
-        scheduleButtonText: {
-            color: '#ffffff',
-            fontSize: 16,
-            fontWeight: '700',
-            letterSpacing: 0.3,
-        },
-        buttonIcon: {
-            marginRight: 8,
-        },
-    });
-
     return (
         <View style={styles.card}>
             {/* Header */}
             <View style={styles.headerRow}>
-                <View style={styles.iconBadge}>
-                    <Ionicons name="calendar" size={22} color={colors.accent} />
+                <View style={[styles.iconBadge, initialData && { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                    <Ionicons 
+                      name={initialData ? "create" : "sparkles"} 
+                      size={20} 
+                      color={initialData ? '#10b981' : colors.accent} 
+                    />
                 </View>
-                <View>
-                    <Text style={styles.title}>Schedule Workout</Text>
-                    <Text style={styles.subtitle}>Plan your next session</Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.title, { color: colors.text }]}>
+                      {initialData ? 'Edit Session' : 'Schedule Session'}
+                    </Text>
+                    <Text style={[styles.subtitle, { color: colors.subtext }]}>
+                      {initialData ? 'Update your plans' : 'Lock in your next workout'}
+                    </Text>
                 </View>
+                {initialData && onCancelEdit && (
+                  <TouchableOpacity onPress={onCancelEdit} style={styles.cancelLink}>
+                    <Text style={{ color: '#ef4444', fontWeight: '600' }}>Cancel</Text>
+                  </TouchableOpacity>
+                )}
             </View>
 
             {/* Title Field */}
             <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Workout Title</Text>
-                <View style={[styles.inputWrapper, { borderColor: titleFocused ? colors.borderFocus : colors.border }]}>
+                <Text style={[styles.label, { color: colors.subtext }]}>Workout Title</Text>
+                <View style={[
+                  styles.inputWrapper, 
+                  { 
+                    borderColor: titleFocused ? colors.borderFocus : colors.border,
+                    backgroundColor: colors.surface
+                  }
+                ]}>
                     <Ionicons
                         name="barbell-outline"
                         size={18}
@@ -247,9 +200,9 @@ export default function WorkoutScheduler({ onSchedule }: Props) {
                     <TextInput
                         value={formData.title}
                         onChangeText={(text) => setFormData({ ...formData, title: text })}
-                        placeholder="e.g. Morning Run, HIIT Session"
+                        placeholder="Push Day, Cardio, etc."
                         placeholderTextColor={colors.placeholder}
-                        style={styles.input}
+                        style={[styles.input, { color: colors.text }]}
                         onFocus={() => setTitleFocused(true)}
                         onBlur={() => setTitleFocused(false)}
                     />
@@ -258,44 +211,46 @@ export default function WorkoutScheduler({ onSchedule }: Props) {
 
             {/* Description Field */}
             <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Notes (optional)</Text>
-                <View style={[styles.textAreaWrapper, { borderColor: descFocused ? colors.borderFocus : colors.border }]}>
+                <Text style={[styles.label, { color: colors.subtext }]}>Notes</Text>
+                <View style={[
+                  styles.textAreaWrapper, 
+                  { 
+                    borderColor: descFocused ? colors.borderFocus : colors.border,
+                    backgroundColor: colors.surface
+                  }
+                ]}>
                     <TextInput
                         value={formData.description}
                         onChangeText={(text) => setFormData({ ...formData, description: text })}
-                        placeholder="Add a short description or note..."
+                        placeholder="Leg day with focus on quads..."
                         placeholderTextColor={colors.placeholder}
                         multiline
-                        numberOfLines={3}
-                        style={styles.textArea}
+                        numberOfLines={2}
+                        style={[styles.textArea, { color: colors.text }]}
                         onFocus={() => setDescFocused(true)}
                         onBlur={() => setDescFocused(false)}
                     />
                 </View>
             </View>
 
-            {/* Divider */}
-            <View style={styles.divider} />
-
             {/* Date/Time Picker */}
             <View style={styles.fieldGroup}>
-                <Text style={styles.dateLabel}>Scheduled Time</Text>
                 <TouchableOpacity
-                    onPress={() => setShowDatePicker(true)}
-                    style={styles.dateButton}
+                    onPress={showPicker}
+                    style={[styles.dateButton, { backgroundColor: colors.dateBadge }]}
                     activeOpacity={0.75}
                 >
-                    <Ionicons name="time-outline" size={18} color={colors.dateBadgeText} />
-                    <Text style={styles.dateButtonText}>{formatDate(formData.scheduledTime)}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.dateBadgeText} style={styles.dateChevron} />
+                    <Ionicons name="time" size={18} color={colors.dateBadgeText} />
+                    <Text style={[styles.dateButtonText, { color: colors.dateBadgeText }]}>{formatDate(formData.scheduledTime)}</Text>
+                    <Ionicons name="chevron-down" size={16} color={colors.dateBadgeText} />
                 </TouchableOpacity>
             </View>
 
             {showDatePicker && (
                 <DateTimePicker
                     value={formData.scheduledTime}
-                    mode="datetime"
-                    display="default"
+                    mode={Platform.OS === 'android' ? pickerMode : 'datetime'}
+                    display={Platform.OS === 'android' ? 'default' : 'spinner'}
                     onChange={handleDateChange}
                     minimumDate={new Date()}
                 />
@@ -303,20 +258,123 @@ export default function WorkoutScheduler({ onSchedule }: Props) {
 
             {/* Submit Button */}
             <TouchableOpacity
-                onPress={handleSchedule}
-                disabled={loading}
-                style={styles.scheduleButton}
+                onPress={handleAction}
+                disabled={loading || !formData.title.trim()}
+                style={[
+                  styles.scheduleButton, 
+                  { backgroundColor: loading || !formData.title.trim() ? colors.buttonDisabled : (initialData ? '#10b981' : colors.buttonBg) }
+                ]}
                 activeOpacity={0.85}
             >
                 {loading ? (
                     <ActivityIndicator size="small" color="#ffffff" style={styles.buttonIcon} />
                 ) : (
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" style={styles.buttonIcon} />
+                    <Ionicons name={initialData ? "save" : "add-circle"} size={20} color="#ffffff" style={styles.buttonIcon} />
                 )}
                 <Text style={styles.scheduleButtonText}>
-                    {loading ? 'Scheduling...' : 'Schedule Workout'}
+                    {loading ? 'Please wait...' : (initialData ? 'Update Schedule' : 'Add to Schedule')}
                 </Text>
             </TouchableOpacity>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    card: {
+        borderRadius: 24,
+        padding: 20,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    iconBadge: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    title: {
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: -0.3,
+    },
+    subtitle: {
+        fontSize: 12,
+        marginTop: 1,
+    },
+    cancelLink: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    fieldGroup: {
+        marginBottom: 12,
+    },
+    label: {
+        fontSize: 11,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        marginBottom: 6,
+        marginLeft: 2,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        borderWidth: 1.5,
+        paddingHorizontal: 12,
+    },
+    inputIcon: {
+        marginRight: 8,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 10,
+        fontSize: 14,
+    },
+    textAreaWrapper: {
+        borderRadius: 12,
+        borderWidth: 1.5,
+        paddingHorizontal: 12,
+        paddingTop: 8,
+    },
+    textArea: {
+        fontSize: 14,
+        minHeight: 50,
+        textAlignVertical: 'top',
+    },
+    dateButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        gap: 10,
+    },
+    dateButtonText: {
+        fontSize: 13,
+        fontWeight: '700',
+        flex: 1,
+    },
+    scheduleButton: {
+        borderRadius: 14,
+        paddingVertical: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+    },
+    scheduleButtonText: {
+        color: '#ffffff',
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    buttonIcon: {
+        marginRight: 6,
+    },
+});
