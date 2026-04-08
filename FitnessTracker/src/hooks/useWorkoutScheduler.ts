@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleWorkoutNotification, cancelWorkoutNotification } from '../../services/notificationService';
+
+const WORKOUT_SCHEDULE_KEYS = '@fitness_workout_schedules';
 
 export interface ScheduledWorkout {
     id: string;
@@ -12,7 +15,40 @@ export interface ScheduledWorkout {
 
 export const useWorkoutScheduler = () => {
     const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledWorkout[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Initial load
+    useEffect(() => {
+        const loadSchedules = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(WORKOUT_SCHEDULE_KEYS);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    // Restore date strings to actual Date objects
+                    const mapped = parsed.map((item: any) => ({
+                        ...item,
+                        scheduledTime: new Date(item.scheduledTime)
+                    }));
+                    setScheduledWorkouts(mapped);
+                }
+            } catch (e) {
+                console.error('Failed to load schedules:', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadSchedules();
+    }, []);
+
+    // Save strictly upon changes
+    const persistSchedules = async (newSchedules: ScheduledWorkout[]) => {
+        try {
+            await AsyncStorage.setItem(WORKOUT_SCHEDULE_KEYS, JSON.stringify(newSchedules));
+            setScheduledWorkouts(newSchedules);
+        } catch (e) {
+            console.error('Failed to save schedules:', e);
+        }
+    };
 
     const scheduleWorkout = async (workout: Omit<ScheduledWorkout, 'id' | 'completed' | 'notificationId'>) => {
         setLoading(true);
@@ -32,7 +68,8 @@ export const useWorkoutScheduler = () => {
                 completed: false,
             };
 
-            setScheduledWorkouts(prev => [...prev, newWorkout]);
+            const updated = [...scheduledWorkouts, newWorkout];
+            await persistSchedules(updated);
         } catch (error) {
             console.error('Error scheduling workout:', error);
         } finally {
@@ -43,16 +80,16 @@ export const useWorkoutScheduler = () => {
     const cancelScheduledWorkout = async (workoutId: string) => {
         try {
             await cancelWorkoutNotification(workoutId);
-            setScheduledWorkouts(prev => prev.filter(w => w.id !== workoutId));
+            const updated = scheduledWorkouts.filter(w => w.id !== workoutId);
+            await persistSchedules(updated);
         } catch (error) {
             console.error('Error cancelling workout:', error);
         }
     };
 
     const markAsCompleted = (workoutId: string) => {
-        setScheduledWorkouts(prev =>
-            prev.map(w => w.id === workoutId ? { ...w, completed: true } : w)
-        );
+        const updated = scheduledWorkouts.map(w => w.id === workoutId ? { ...w, completed: true } : w);
+        persistSchedules(updated);
     };
 
     return {

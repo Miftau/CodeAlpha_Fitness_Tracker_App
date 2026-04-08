@@ -65,54 +65,51 @@ export const useWeeklySteps = (goalMax: number = 10000) => {
     const [weeklyData, setWeeklyData] = useState<WeeklyBarPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const load = async () => {
-            if (!user) return;
+    const loadWeekly = async () => {
+        if (!user) return;
 
-            // Build last-7-days date strings (oldest → newest)
-            const days: { label: string; dateStr: string }[] = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                days.push({
-                    label: d.toLocaleDateString('en-US', { weekday: 'short' }),
-                    dateStr: d.toISOString().split('T')[0],
-                });
-            }
+        const days: { label: string; dateStr: string }[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push({
+                label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateStr: d.toISOString().split('T')[0],
+            });
+        }
 
-            const startDate = days[0].dateStr;
-            const endDate = days[days.length - 1].dateStr;
+        const startDate = days[0].dateStr;
+        const endDate = days[days.length - 1].dateStr;
 
-            try {
-                setLoading(true);
-                const allActivities = await getActivitiesByRange(user.uid, startDate, endDate);
+        try {
+            setLoading(true);
+            const allActivities = await getActivitiesByRange(user.uid, startDate, endDate);
 
-                // Sum steps per day
-                const stepsByDate: Record<string, number> = {};
-                for (const act of allActivities) {
-                    if (act.type === 'steps') {
-                        stepsByDate[act.date] = (stepsByDate[act.date] ?? 0) + act.value;
-                    }
+            const stepsByDate: Record<string, number> = {};
+            for (const act of allActivities) {
+                if (act.type === 'steps') {
+                    stepsByDate[act.date] = (stepsByDate[act.date] ?? 0) + act.value;
                 }
-
-                const points: WeeklyBarPoint[] = days.map(({ label, dateStr }) => ({
-                    label,
-                    value: stepsByDate[dateStr] ?? 0,
-                    max: goalMax,
-                }));
-
-                setWeeklyData(points);
-            } catch (e) {
-                console.error('Failed to load weekly steps:', e);
-                // Fallback: all zeros
-                setWeeklyData(days.map(({ label }) => ({ label, value: 0, max: goalMax })));
-            } finally {
-                setLoading(false);
             }
-        };
 
-        load();
+            const points: WeeklyBarPoint[] = days.map(({ label, dateStr }) => ({
+                label,
+                value: stepsByDate[dateStr] ?? 0,
+                max: goalMax,
+            }));
+
+            setWeeklyData(points);
+        } catch (e) {
+            console.error('Failed to load weekly steps:', e);
+            setWeeklyData(days.map(({ label }) => ({ label, value: 0, max: goalMax })));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadWeekly();
     }, [user, goalMax]);
 
-    return { weeklyData, loading };
+    return { weeklyData, loading, refetch: loadWeekly };
 };

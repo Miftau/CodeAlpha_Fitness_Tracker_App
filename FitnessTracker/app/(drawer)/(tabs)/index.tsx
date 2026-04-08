@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ScrollView,
   View,
@@ -31,9 +32,17 @@ const ACTIVITY_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; colo
 export default function DashboardScreen() {
   const isDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
-  const { activities, loading }  = useActivities();
+  const { activities, loading, refetch }  = useActivities();
   const { goals }                = useGoals();
-  const { weeklyData, loading: chartLoading } = useWeeklySteps(goals.steps);
+  const { weeklyData, loading: chartLoading, refetch: refetchWeekly } = useWeeklySteps(goals.steps) as any;
+
+  // Refresh data explicitly every time the user tabs back here
+  useFocusEffect(
+    useCallback(() => {
+      if (refetch) refetch();
+      if (refetchWeekly) refetchWeekly();
+    }, [refetch, refetchWeekly])
+  );
 
   // ── Palette ──────────────────────────────────────────────────────────────
   const bg      = isDark ? '#0d1117' : '#f0f4ff';

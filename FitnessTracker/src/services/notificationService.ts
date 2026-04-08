@@ -9,6 +9,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -51,7 +53,7 @@ export const enableDailyReminders = async () => {
                 sound: true,
             },
             trigger: {
-                type: 'daily',
+                type: 'daily' as any,
                 hour: 18,
                 minute: 0,
             },
@@ -81,5 +83,35 @@ export const getNotificationPreference = async (): Promise<boolean> => {
         return stored === 'true';
     } catch (e) {
         return false;
+    }
+};
+
+export const scheduleWorkoutNotification = async (title: string, description: string, scheduledTime: Date, id: string): Promise<string | undefined> => {
+    const hasPermission = await checkNotificationPermissions();
+    if (!hasPermission) return undefined;
+
+    try {
+        const notifId = await Notifications.scheduleNotificationAsync({
+            content: {
+                title: `Workout Reminder: ${title}`,
+                body: description || "It's time for your scheduled workout!",
+                sound: true,
+                data: { workoutId: id },
+            },
+            trigger: { type: 'date' as any, date: scheduledTime },
+        });
+        return notifId;
+    } catch (e) {
+        console.error("Failed to schedule workout notification:", e);
+        return undefined;
+    }
+}
+
+export const cancelWorkoutNotification = async (notificationId?: string) => {
+    if (!notificationId) return;
+    try {
+        await Notifications.cancelScheduledNotificationAsync(notificationId);
+    } catch (e) {
+        console.error("Failed to cancel workout notification:", e);
     }
 };

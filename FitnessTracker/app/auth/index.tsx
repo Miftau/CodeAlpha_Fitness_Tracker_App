@@ -9,7 +9,7 @@ export default function AuthScreenPage() {
 
   // If already logged in
   if (user) {
-    return <Redirect href="/(drawer)/(tabs)/index" />;
+    return <Redirect href="./(drawer)/(tabs)/index" />;
   }
 
   return (
