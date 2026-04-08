@@ -44,7 +44,7 @@
           "icon": "./src/assets/images/icon.png",
           "color": "#ffffff",
           "sounds": [
-            "./src/assets/sounds/workout-alarm.mp3"
+            "./src/assets/sounds/workout.mp3"
           ]
         }
       ]
