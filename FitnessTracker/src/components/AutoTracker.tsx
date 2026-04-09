@@ -16,7 +16,21 @@ export default function AutoTracker({ onTrackComplete }: Props) {
     onTrackComplete(counts);
   };
 
-  const MetricTile = ({ label, value, unit, colorClass, darkColorClass }: any) => (
+  const formatCalories = (kcal: number) => {
+    if (kcal < 1.0) {
+      return `${Math.round(kcal * 1000)} cal`;
+    }
+    return `${kcal.toFixed(1)} kcal`;
+  };
+
+  const formatDistance = (meters: number) => {
+    if (meters < 1000) {
+      return `${Math.round(meters)} m`;
+    }
+    return `${(meters / 1000).toFixed(2)} km`;
+  };
+
+  const MetricTile = ({ label, value, colorClass, darkColorClass }: any) => (
     <View className="items-center flex-1">
       <Text className={`text-2xl font-bold ${isDark ? darkColorClass : colorClass}`}>
         {value}
@@ -48,8 +62,8 @@ export default function AutoTracker({ onTrackComplete }: Props) {
       <View className="flex-row mb-8">
         <MetricTile label="Steps" value={counts.steps} colorClass="text-blue-600" darkColorClass="text-blue-400" />
         <MetricTile label="Pushups" value={counts.pushups} colorClass="text-green-600" darkColorClass="text-green-400" />
-        <MetricTile label="Distance" value={`${counts.distance}km`} colorClass="text-purple-600" darkColorClass="text-purple-400" />
-        <MetricTile label="Calories" value={`${counts.calories}kcal`} colorClass="text-orange-600" darkColorClass="text-orange-400" />
+        <MetricTile label="Distance" value={formatDistance(counts.distance)} colorClass="text-purple-600" darkColorClass="text-purple-400" />
+        <MetricTile label="Calories" value={formatCalories(counts.calories)} colorClass="text-orange-600" darkColorClass="text-orange-400" />
       </View>
 
       <View className="flex-row gap-3">

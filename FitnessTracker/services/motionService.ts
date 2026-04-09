@@ -85,8 +85,8 @@ export class MotionDetector {
         onData({ 
             steps: this.stepCount, 
             pushups: this.pushupCount,
-            distance: Number((this.distanceMeters / 1000).toFixed(2)), // Convert to km
-            calories: Number(this.caloriesBurned.toFixed(1))
+            distance: this.distanceMeters,
+            calories: this.caloriesBurned
         });
     };
 
@@ -107,7 +107,7 @@ export class MotionDetector {
     getCounts = () => ({
         steps: this.stepCount,
         pushups: this.pushupCount,
-        distance: Number((this.distanceMeters / 1000).toFixed(2)),
-        calories: Number(this.caloriesBurned.toFixed(1))
+        distance: this.distanceMeters,
+        calories: this.caloriesBurned
     });
 }

@@ -37,7 +37,7 @@ export default function TrackerScreen() {
             if (counts.distance > 0) {
                 promises.push(logActivity({
                     type: 'distance',
-                    value: counts.distance,
+                    value: Number((counts.distance / 1000).toFixed(2)),
                     unit: 'km',
                     notes: 'Auto-tracked distance',
                     date: today,
@@ -47,7 +47,7 @@ export default function TrackerScreen() {
             if (counts.calories > 0) {
                 promises.push(logActivity({
                     type: 'calories',
-                    value: counts.calories,
+                    value: Number(counts.calories.toFixed(1)),
                     unit: 'kcal',
                     notes: 'Auto-tracked calories',
                     date: today,
@@ -59,7 +59,7 @@ export default function TrackerScreen() {
                 Alert.alert(
                     'Success',
                     'Tracking data saved successfully!',
-                    [{ text: 'OK', onPress: () => router.push('/(drawer)/(tabs)/index') }]
+                    [{ text: 'OK', onPress: () => router.push('./(drawer)/(tabs)/index') }]
                 );
             } else {
                 Alert.alert('No Data', 'No activity was recorded.');
