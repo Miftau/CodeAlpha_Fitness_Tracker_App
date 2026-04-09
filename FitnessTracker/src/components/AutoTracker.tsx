@@ -20,7 +20,7 @@ export default function AutoTracker({ onTrackComplete }: Props) {
     if (kcal < 1.0) {
       return `${Math.round(kcal * 1000)} cal`;
     }
-    return `${kcal.toFixed(1)} kcal`;
+    return `${kcal.toFixed(1)} Cal`;
   };
 
   const formatDistance = (meters: number) => {

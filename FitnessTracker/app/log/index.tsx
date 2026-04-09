@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 const ACTIVITY_TYPES = [
   { label: 'Steps', value: 'steps', unit: 'steps', icon: 'footsteps' as const, color: '#6366f1' },
   { label: 'Workout', value: 'workout', unit: 'minutes', icon: 'barbell' as const, color: '#8b5cf6' },
-  { label: 'Calories', value: 'calories', unit: 'kcal', icon: 'flame' as const, color: '#f59e0b' },
+  { label: 'Calories', value: 'calories', unit: 'Cal', icon: 'flame' as const, color: '#f59e0b' },
   { label: 'Weight', value: 'weight', unit: 'kg', icon: 'scale' as const, color: '#10b981' },
   { label: 'Sleep', value: 'sleep', unit: 'hours', icon: 'moon' as const, color: '#3b82f6' },
 ];

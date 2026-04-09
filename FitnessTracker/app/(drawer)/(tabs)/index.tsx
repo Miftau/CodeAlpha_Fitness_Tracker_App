@@ -127,8 +127,8 @@ export default function DashboardScreen() {
             />
             <StatTile
               title="Calories"
-              value={String(totalCalories)}
-              subtitle={`of ${goals.calories} kcal goal`}
+              value={totalCalories ? `${totalCalories.toFixed(1)}` : '0'}
+              subtitle="Cal burned today"
               icon="flame"
               accentColor="#f59e0b"
             />
