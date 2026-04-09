@@ -25,10 +25,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACTIVITY_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
   steps:    { icon: 'footsteps',  color: '#6366f1' },
   workout:  { icon: 'barbell',    color: '#8b5cf6' },
-  calories: { icon: 'flame',      color: '#f59e0b' },
-  weight:   { icon: 'scale',      color: '#10b981' },
-  sleep:    { icon: 'moon',       color: '#3b82f6' },
+  distance: { icon: 'map',        color: '#8b5cf6' },
 };
+
+const QUICK_ACTIONS = [
+  { label: 'Auto Tracker', icon: 'pulse' as const,    href: '/tracker'   as const, color: '#8b5cf6' },
+  { label: 'Workout Timer', icon: 'timer' as const,   href: '/timer'     as const, color: '#f59e0b' },
+  { label: 'Schedule',      icon: 'calendar' as const, href: '/schedule'  as const, color: '#10b981' },
+  { label: 'Activity Log',  icon: 'create' as const,  href: '/log'       as const, color: '#3b82f6' },
+] as const;
 
 export default function DashboardScreen() {
   const isDark = useColorScheme() === 'dark';
@@ -59,6 +64,7 @@ export default function DashboardScreen() {
   // ── Today's totals ───────────────────────────────────────────────────────
   const totalSteps    = activities.filter(a => a.type === 'steps').reduce((sum, a) => sum + a.value, 0);
   const totalCalories = activities.filter(a => a.type === 'calories').reduce((sum, a) => sum + a.value, 0);
+  const totalDistance = activities.filter(a => a.type === 'distance').reduce((sum, a) => sum + a.value, 0);
   const workouts      = activities.filter(a => a.type === 'workout').length;
   const avgSleep      = (() => {
     const sleepActs = activities.filter(a => a.type === 'sleep');
@@ -140,6 +146,35 @@ export default function DashboardScreen() {
               icon="moon"
               accentColor="#3b82f6"
             />
+            <StatTile
+              title="Distance"
+              value={`${totalDistance.toFixed(2)}`}
+              subtitle="km covered"
+              icon="map"
+              accentColor="#8b5cf6"
+            />
+          </View>
+
+          {/* ── Quick Actions Grid ────────────────────────────────────── */}
+          <Text style={[styles.sectionTitle, { color: textPri, marginBottom: 12 }]}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            {QUICK_ACTIONS.map(({ label, icon, href, color }) => (
+              <Link key={label} href={href} asChild>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[
+                    styles.actionCard,
+                    { backgroundColor: card, shadowColor: color },
+                  ]}
+                >
+                  <View style={[styles.actionIconWrap, { backgroundColor: color + (isDark ? '33' : '1a') }]}>
+                    <Ionicons name={icon} size={22} color={color} />
+                  </View>
+                  <Text style={[styles.actionLabel, { color: textPri }]}>{label}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={textSub} style={{ marginTop: 'auto' }} />
+                </TouchableOpacity>
+              </Link>
+            ))}
           </View>
 
           {/* ── Next Workout Preview ───────────────────────────────────── */}
@@ -330,4 +365,19 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
   emptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  
+  // Quick Actions Styles
+  actionsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 28,
+  },
+  actionCard: {
+    width: (SCREEN_WIDTH - 52) / 2, borderRadius: 18, padding: 16,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
+    flexDirection: 'column', gap: 8,
+  },
+  actionIconWrap: {
+    width: 42, height: 42, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionLabel: { fontSize: 13, fontWeight: '700', letterSpacing: -0.2 },
 });

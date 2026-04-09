@@ -9,9 +9,10 @@ export default function TrackerScreen() {
     const isDark = useColorScheme() === 'dark';
     const { logActivity } = useActivities();
 
-    const handleTrackComplete = async (counts: { steps: number; pushups: number }) => {
+    const handleTrackComplete = async (counts: { steps: number; pushups: number; distance: number; calories: number }) => {
         try {
             const promises = [];
+            const today = new Date().toISOString().split('T')[0];
 
             if (counts.steps > 0) {
                 promises.push(logActivity({
@@ -19,7 +20,7 @@ export default function TrackerScreen() {
                     value: counts.steps,
                     unit: 'steps',
                     notes: 'Auto-tracked steps',
-                    date: new Date().toISOString().split('T')[0],
+                    date: today,
                 }));
             }
 
@@ -29,7 +30,27 @@ export default function TrackerScreen() {
                     value: counts.pushups,
                     unit: 'reps',
                     notes: `Auto-tracked pushups: ${counts.pushups} reps`,
-                    date: new Date().toISOString().split('T')[0],
+                    date: today,
+                }));
+            }
+
+            if (counts.distance > 0) {
+                promises.push(logActivity({
+                    type: 'distance',
+                    value: counts.distance,
+                    unit: 'km',
+                    notes: 'Auto-tracked distance',
+                    date: today,
+                }));
+            }
+
+            if (counts.calories > 0) {
+                promises.push(logActivity({
+                    type: 'calories',
+                    value: counts.calories,
+                    unit: 'kcal',
+                    notes: 'Auto-tracked calories',
+                    date: today,
                 }));
             }
 

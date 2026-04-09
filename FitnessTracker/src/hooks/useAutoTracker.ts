@@ -3,7 +3,7 @@ import { MotionDetector } from '../../services/motionService';
 
 export const useAutoTracker = () => {
     const [isTracking, setIsTracking] = useState(false);
-    const [counts, setCounts] = useState({ steps: 0, pushups: 0 });
+    const [counts, setCounts] = useState({ steps: 0, pushups: 0, distance: 0, calories: 0 });
     const [motionData, setMotionData] = useState<any>(null);
     const detectorRef = useRef<MotionDetector>(new MotionDetector());
 
@@ -28,7 +28,7 @@ export const useAutoTracker = () => {
 
     const resetCounts = () => {
         detectorRef.current.resetCounts();
-        setCounts({ steps: 0, pushups: 0 });
+        setCounts({ steps: 0, pushups: 0, distance: 0, calories: 0 });
     };
 
     return {
